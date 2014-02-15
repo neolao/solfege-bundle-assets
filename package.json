@@ -1,0 +1,17 @@
+{
+    "name"          : "solfegejs-assets",
+    "description"   : "Asset manager for SolfegeJS",
+    "version"       : "0.1.0",
+    "author"        : "neolao <contact@neolao.com>",
+    "repository"    : "https://github.com/neolao/solfege-bundle-assets.git",
+    "license"       : "MIT",
+    "main"          : "bundle/index.js",
+    "engines"       : 
+    {
+        "node": ">= 0.11.9"
+    },
+    "dependencies"  :
+    {
+        "solfegejs"     : "1.2.x"
+    }
+}
