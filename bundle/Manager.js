@@ -8,6 +8,9 @@ var Manager = solfege.util.Class.create(function()
     // Set the default configuration
     this.configuration = require('../configuration/default.js');
 
+    // Initialize properties
+    this.filters = require('./filters');
+
     // Initialize the available files
     this.availableFiles = [];
 
@@ -33,6 +36,14 @@ proto.application;
  * @api private
  */
 proto.configuration;
+
+/**
+ * The available filters
+ *
+ * @type {Object}
+ * @api public
+ */
+proto.filters;
 
 /**
  * Available files

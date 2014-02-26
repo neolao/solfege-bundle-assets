@@ -13,5 +13,16 @@
     "dependencies"  :
     {
         "solfegejs"     : "1.3.x"
+    },
+    "devDependencies":
+    {
+        "co"            : "*",
+        "chai"          : "*",
+        "mocha"         : "*"
+    },
+    "scripts"       :
+    {
+        "test"          : "mocha --harmony --recursive --reporter spec --bail"
     }
+
 }

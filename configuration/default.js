@@ -33,8 +33,8 @@ module.exports = {
                 '@this:resources/javascripts/header.js'
             ],
 
-            // The public URL of the package (optional)
-            baseUrl: '/',
+            // Base of the public URL of the package (optional)
+            baseUrl: '/assets/javascripts/package/',
 
             // Override the default filters (optional)
             filters: []
@@ -54,8 +54,8 @@ module.exports = {
                 '@this:resources/stylesheets/homepage.css'
             ],
 
-            // The public URL of the package (optional)
-            baseUrl: '/',
+            // Base of the public URL of the package (optional)
+            baseUrl: '/assets/stylesheets/package/',
 
             // Override the default filters (optional)
             filters: []
