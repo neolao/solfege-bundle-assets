@@ -17,7 +17,7 @@ module.exports = {
 
     // The available files
     files: [
-        '@this:resources/javascripts/**/*.js'
+        '@this:resources/**/*'
     ],
 
     // The javascript packages
