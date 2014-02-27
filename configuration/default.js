@@ -37,7 +37,7 @@ module.exports = {
             baseUrl: '/assets/javascripts/package/',
 
             // Override the default filters (optional)
-            filters: []
+            filters: null
         }
     },
 
@@ -58,7 +58,7 @@ module.exports = {
             baseUrl: '/assets/stylesheets/package/',
 
             // Override the default filters (optional)
-            filters: []
+            filters: null
         }
     }
 };

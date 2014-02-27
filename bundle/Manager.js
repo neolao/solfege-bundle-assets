@@ -15,7 +15,9 @@ var Manager = solfege.util.Class.create(function()
     this.availableFiles = [];
 
     // Bind public methods to this instance
+    var bindGenerator = solfege.util.Function.bindGenerator;
     this.getAssetUrl = this.getAssetUrl.bind(this);
+    //this.getStylesheetContent = bindGenerator(this, this.getStylesheetContent);
 
 }, 'solfege.bundle.assets.Manager');
 var proto = Manager.prototype;
@@ -99,6 +101,80 @@ proto.getAssetUrl = function(assetUri)
 };
 
 /**
+ * Get the content of a javascript package
+ *
+ * @param   {String}    packageName     The package name
+ * @return  {String}                    The content
+ * @api     public
+ */
+proto.getJavascriptContent = function*(packageName)
+{
+    var self = this;
+
+    // Get the package object
+    var packageObject = this.configuration.javascripts[packageName];
+    if (!packageObject) {
+        return null;
+    }
+
+    // Get the files to filter
+    var packageFiles = packageObject.files || [];
+    var files = [];
+    packageFiles.forEach(function(packageFile) {
+        if (self.application.isSolfegeUri(packageFile)) {
+            var resolved = self.application.resolveSolfegeUri(packageFile);
+            if (resolved instanceof Array) {
+                files.concat(resolved);
+            } else {
+                files.push(resolved);
+            }
+            return;
+        }
+
+        files.push(packageFile);
+    });
+
+    // Get the content of each file
+    var contents = [];
+    var fileCount = files.length;
+    var content;
+    for (var fileIndex = 0; fileIndex < fileCount; ++fileIndex) {
+        var filePath = files[fileIndex];
+        content = yield solfege.util.Node.fs.readFile(filePath, 'utf8');
+        contents.push(content);
+    }
+
+    // Get the filters
+    var defaultFilters = this.configuration.stylesheets.filters;
+    var filters = packageObject.filters || defaultFilters;
+
+    // Filter the contents
+    var contentCount = contents.length;
+    var filterCount = filters.length;
+    for (var contentIndex = 0; contentIndex < contentCount; ++contentIndex) {
+        content = contents[contentIndex];
+
+        for (var filterIndex = 0; filterIndex < filterCount; ++filterIndex) {
+            var filter = filters[filterIndex];
+            content = yield filter(content);
+        }
+
+        contents[contentIndex] = content;
+    }
+
+
+    // Return the content
+    if (contents.length === 0) {
+        return '';
+    } else if (contents.length === 1) {
+        return contents[0];
+    } else {
+        return contents;
+    }
+
+};
+
+/**
  * Get the URL of a javascript package
  *
  * @param   {String}    packageName     The package name
@@ -107,6 +183,80 @@ proto.getAssetUrl = function(assetUri)
 proto.getJavascriptUrl = function(packageName)
 {
 };
+
+/**
+ * Get the content of a stylesheet package
+ *
+ * @param   {String}    packageName     The package name
+ * @return  {String}                    The content
+ * @api     public
+ */
+proto.getStylesheetContent = function*(packageName)
+{
+    var self = this;
+
+    // Get the package object
+    var packageObject = this.configuration.stylesheets[packageName];
+    if (!packageObject) {
+        return null;
+    }
+
+    // Get the files to filter
+    var packageFiles = packageObject.files || [];
+    var files = [];
+    packageFiles.forEach(function(packageFile) {
+        if (self.application.isSolfegeUri(packageFile)) {
+            var resolved = self.application.resolveSolfegeUri(packageFile);
+            if (resolved instanceof Array) {
+                files.concat(resolved);
+            } else {
+                files.push(resolved);
+            }
+            return;
+        }
+
+        files.push(packageFile);
+    });
+
+    // Get the content of each file
+    var contents = [];
+    var fileCount = files.length;
+    var content;
+    for (var fileIndex = 0; fileIndex < fileCount; ++fileIndex) {
+        var filePath = files[fileIndex];
+        content = yield solfege.util.Node.fs.readFile(filePath, 'utf8');
+        contents.push(content);
+    }
+
+    // Get the filters
+    var defaultFilters = this.configuration.stylesheets.filters;
+    var filters = packageObject.filters || defaultFilters;
+
+    // Filter the contents
+    var contentCount = contents.length;
+    var filterCount = filters.length;
+    for (var contentIndex = 0; contentIndex < contentCount; ++contentIndex) {
+        content = contents[contentIndex];
+
+        for (var filterIndex = 0; filterIndex < filterCount; ++filterIndex) {
+            var filter = filters[filterIndex];
+            content = yield filter(content);
+        }
+
+        contents[contentIndex] = content;
+    }
+
+
+    // Return the content
+    if (contents.length === 0) {
+        return '';
+    } else if (contents.length === 1) {
+        return contents[0];
+    } else {
+        return contents;
+    }
+};
+
 
 /**
  * Get the URL of a stylesheet package
@@ -167,6 +317,7 @@ proto.middleware = function*(request, response, next)
 proto.onBundlesInitialized = function*()
 {
     var self = this;
+    var packageName;
 
     // Populate the available files
     this.availableFiles = [];
@@ -180,6 +331,51 @@ proto.onBundlesInitialized = function*()
             self.availableFiles.push(item);
         }
     });
+
+    // The function used by forEach method
+    var resolveSolfegeFilter = function(filter, index, list) {
+        if (typeof filter === 'string' && self.application.isSolfegeUri(filter)) {
+            list[index] = self.resolveSolfegeUri(filter, self);
+        }
+    };
+
+    // Parse the javascript filters
+    // If there are Solfege URIs, then resolve them
+    if (!this.configuration.javascripts) {
+        this.configuration.javascripts = {};
+    }
+    var javascripts = this.configuration.javascripts;
+    if (!javascripts.filters) {
+        javascripts.filters = [];
+    }
+    javascripts.filters.forEach(resolveSolfegeFilter);
+    for (packageName in javascripts) {
+        if (packageName === 'filters') {
+            continue;
+        }
+        if (javascripts[packageName].filters) {
+            javascripts[packageName].filters.forEach(resolveSolfegeFilter);
+        }
+    }
+
+    // Parse the stylesheet filters
+    // If there are Solfege URIs, then resolve them
+    if (!this.configuration.stylesheets) {
+        this.configuration.stylesheets = {};
+    }
+    var stylesheets = this.configuration.stylesheets;
+    if (!stylesheets.filters) {
+        stylesheets.filters = [];
+    }
+    stylesheets.filters.forEach(resolveSolfegeFilter);
+    for (packageName in stylesheets) {
+        if (packageName === 'filters') {
+            continue;
+        }
+        if (stylesheets[packageName].filters) {
+            stylesheets[packageName].filters.forEach(resolveSolfegeFilter);
+        }
+    }
 };
 
 /**

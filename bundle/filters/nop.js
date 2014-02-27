@@ -1,15 +1,10 @@
 /**
  * A filter that do nothing
  *
- * @param   {String}    filePath    The file path
- * @return  {String}                The new content of the file
+ * @param   {String}    content     The content
+ * @return  {String}                The new content
  */
-module.exports = function*(filePath)
+module.exports = function*(content)
 {
-    var fs = require('fs');
-    var content = yield function(done) {
-        fs.readFile(filePath, done);
-    };
-
     return content;
 };
