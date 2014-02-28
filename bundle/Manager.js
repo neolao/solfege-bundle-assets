@@ -149,17 +149,10 @@ proto.getJavascriptContent = function*(packageName)
     var filters = packageObject.filters || defaultFilters;
 
     // Filter the contents
-    var contentCount = contents.length;
     var filterCount = filters.length;
-    for (var contentIndex = 0; contentIndex < contentCount; ++contentIndex) {
-        content = contents[contentIndex];
-
-        for (var filterIndex = 0; filterIndex < filterCount; ++filterIndex) {
-            var filter = filters[filterIndex];
-            content = yield filter(content);
-        }
-
-        contents[contentIndex] = content;
+    for (var filterIndex = 0; filterIndex < filterCount; ++filterIndex) {
+        var filter = filters[filterIndex];
+        contents = yield filter(files, contents);
     }
 
 
@@ -233,17 +226,10 @@ proto.getStylesheetContent = function*(packageName)
     var filters = packageObject.filters || defaultFilters;
 
     // Filter the contents
-    var contentCount = contents.length;
     var filterCount = filters.length;
-    for (var contentIndex = 0; contentIndex < contentCount; ++contentIndex) {
-        content = contents[contentIndex];
-
-        for (var filterIndex = 0; filterIndex < filterCount; ++filterIndex) {
-            var filter = filters[filterIndex];
-            content = yield filter(content);
-        }
-
-        contents[contentIndex] = content;
+    for (var filterIndex = 0; filterIndex < filterCount; ++filterIndex) {
+        var filter = filters[filterIndex];
+        contents = yield filter(files, contents);
     }
 
 
