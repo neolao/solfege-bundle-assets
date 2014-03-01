@@ -17,7 +17,10 @@ var Manager = solfege.util.Class.create(function()
     // Bind public methods to this instance
     var bindGenerator = solfege.util.Function.bindGenerator;
     this.getAssetUrl = this.getAssetUrl.bind(this);
-    //this.getStylesheetContent = bindGenerator(this, this.getStylesheetContent);
+    this.getJavascriptContent = bindGenerator(this, this.getJavascriptContent);
+    this.getJavascriptUrls = this.getJavascriptUrls.bind(this);
+    this.getStylesheetContent = bindGenerator(this, this.getStylesheetContent);
+    this.getStylesheetUrls = this.getStylesheetUrls.bind(this);
 
 }, 'solfege.bundle.assets.Manager');
 var proto = Manager.prototype;
@@ -171,10 +174,36 @@ proto.getJavascriptContent = function*(packageName)
  * Get the URL of a javascript package
  *
  * @param   {String}    packageName     The package name
+ * @param   {Array}                     The file URLs
  * @api     public
  */
-proto.getJavascriptUrl = function(packageName)
+proto.getJavascriptUrls = function(packageName)
 {
+    // Get the package object
+    var packageObject = this.configuration.javascripts[packageName];
+    if (!packageObject) {
+        return null;
+    }
+
+    // Set the base URL
+    var baseUrl = '/';
+    if (packageObject.baseUrl) {
+        baseUrl = packageObject.baseUrl;
+    }
+
+    // Return multiple file names
+    var total = packageObject.files.length
+    if (total > 1) {
+        var fileNames = [];
+        for (var index = 0; index < total; ++index) {
+            fileNames.push(baseUrl + packageName + '-' + index + '.css');
+        }
+        return fileNames;
+    }
+
+    // Return single file name
+    return [baseUrl + packageName + '.css'];
+
 };
 
 /**
@@ -245,13 +274,38 @@ proto.getStylesheetContent = function*(packageName)
 
 
 /**
- * Get the URL of a stylesheet package
+ * Get the URLs of a stylesheet package
  *
  * @param   {String}    packageName     The package name
+ * @return  {Array}                     The file URLs
  * @api     public
  */
-proto.getStylesheetUrl = function(packageName)
+proto.getStylesheetUrls = function(packageName)
 {
+    // Get the package object
+    var packageObject = this.configuration.stylesheets[packageName];
+    if (!packageObject) {
+        return null;
+    }
+
+    // Set the base URL
+    var baseUrl = '/';
+    if (packageObject.baseUrl) {
+        baseUrl = packageObject.baseUrl;
+    }
+
+    // Return multiple file names
+    var total = packageObject.files.length
+    if (total > 1) {
+        var fileNames = [];
+        for (var index = 0; index < total; ++index) {
+            fileNames.push(baseUrl + packageName + '-' + index + '.css');
+        }
+        return fileNames;
+    }
+
+    // Return single file name
+    return [baseUrl + packageName + '.css'];
 };
 
 /**
@@ -291,6 +345,40 @@ proto.middleware = function*(request, response, next)
         return;
     }
 
+    // Check each javascript packages
+    var javascripts = this.configuration.javascripts;
+    for (var javascriptName in javascripts) {
+        if (javascriptName === 'filters') {
+            continue;
+        }
+
+        var javascript = javascripts[javascriptName];
+        var javascriptUrls = this.getJavascriptUrls(javascriptName);
+        if (javascriptUrls.indexOf(publicUrl) !== -1) {
+            var javascriptContent = yield this.getJavascriptContent(javascriptName);
+            response.statusCode = 200;
+            response.body = javascriptContent;
+            return;
+        }
+    }
+
+    // Check each stylesheet packages
+    var stylesheets = this.configuration.stylesheets;
+    for (var stylesheetName in stylesheets) {
+        if (stylesheetName === 'filters') {
+            continue;
+        }
+
+        var stylesheet = stylesheets[stylesheetName];
+        var stylesheetUrls = this.getStylesheetUrls(stylesheetName);
+        if (stylesheetUrls.indexOf(publicUrl) !== -1) {
+            var stylesheetContent = yield this.getStylesheetContent(stylesheetName);
+            response.statusCode = 200;
+            response.body = stylesheetContent;
+            return;
+        }
+    }
+
     // Handle the next middleware
     yield *next;
 };
@@ -321,7 +409,7 @@ proto.onBundlesInitialized = function*()
     // The function used by forEach method
     var resolveSolfegeFilter = function(filter, index, list) {
         if (typeof filter === 'string' && self.application.isSolfegeUri(filter)) {
-            list[index] = self.resolveSolfegeUri(filter, self);
+            list[index] = self.application.resolveSolfegeUri(filter, self);
         }
     };
 
