@@ -106,8 +106,8 @@ proto.getAssetUrl = function(assetUri)
 /**
  * Get the content of a javascript package
  *
- * @param   {String}    packageName     The package name
- * @return  {String}                    The content
+ * @param   {String}        packageName     The package name
+ * @return  {String|Array}                  The content
  * @api     public
  */
 proto.getJavascriptContent = function*(packageName)
@@ -179,6 +179,8 @@ proto.getJavascriptContent = function*(packageName)
  */
 proto.getJavascriptUrls = function(packageName)
 {
+    var self = this;
+
     // Get the package object
     var packageObject = this.configuration.javascripts[packageName];
     if (!packageObject) {
@@ -191,26 +193,38 @@ proto.getJavascriptUrls = function(packageName)
         baseUrl = packageObject.baseUrl;
     }
 
+    // Get the filters
+    var defaultFilters = this.configuration.javascripts.filters;
+    var filters = packageObject.filters || defaultFilters;
+
+    // Check if the package is combined in one file or not
+    var combined = false;
+    filters.forEach(function(filter) {
+        if (filter === self.filters.combine) {
+            combined = true;
+        }
+    });
+
     // Return multiple file names
     var total = packageObject.files.length
-    if (total > 1) {
+    if (total > 1 && !combined) {
         var fileNames = [];
         for (var index = 0; index < total; ++index) {
-            fileNames.push(baseUrl + packageName + '-' + index + '.css');
+            fileNames.push(baseUrl + packageName + '-' + index + '.js');
         }
         return fileNames;
     }
 
     // Return single file name
-    return [baseUrl + packageName + '.css'];
+    return [baseUrl + packageName + '.js'];
 
 };
 
 /**
  * Get the content of a stylesheet package
  *
- * @param   {String}    packageName     The package name
- * @return  {String}                    The content
+ * @param   {String}        packageName     The package name
+ * @return  {String|Array}                  The content
  * @api     public
  */
 proto.getStylesheetContent = function*(packageName)
@@ -282,6 +296,8 @@ proto.getStylesheetContent = function*(packageName)
  */
 proto.getStylesheetUrls = function(packageName)
 {
+    self = this;
+
     // Get the package object
     var packageObject = this.configuration.stylesheets[packageName];
     if (!packageObject) {
@@ -294,9 +310,21 @@ proto.getStylesheetUrls = function(packageName)
         baseUrl = packageObject.baseUrl;
     }
 
+    // Get the filters
+    var defaultFilters = this.configuration.stylesheets.filters;
+    var filters = packageObject.filters || defaultFilters;
+
+    // Check if the package is combined in one file or not
+    var combined = false;
+    filters.forEach(function(filter) {
+        if (filter === self.filters.combine) {
+            combined = true;
+        }
+    });
+
     // Return multiple file names
     var total = packageObject.files.length
-    if (total > 1) {
+    if (total > 1 && !combined) {
         var fileNames = [];
         for (var index = 0; index < total; ++index) {
             fileNames.push(baseUrl + packageName + '-' + index + '.css');
@@ -407,7 +435,14 @@ proto.onBundlesInitialized = function*()
     });
 
     // The function used by forEach method
-    var resolveSolfegeFilter = function(filter, index, list) {
+    var resolveFilter = function(filter, index, list) {
+        // Shortcuts
+        if (filter === 'combine') {
+            list[index] = self.filters.combine;
+            return;
+        }
+
+        // Solfege URI
         if (typeof filter === 'string' && self.application.isSolfegeUri(filter)) {
             list[index] = self.application.resolveSolfegeUri(filter, self);
         }
@@ -422,13 +457,13 @@ proto.onBundlesInitialized = function*()
     if (!javascripts.filters) {
         javascripts.filters = [];
     }
-    javascripts.filters.forEach(resolveSolfegeFilter);
+    javascripts.filters.forEach(resolveFilter);
     for (packageName in javascripts) {
         if (packageName === 'filters') {
             continue;
         }
         if (javascripts[packageName].filters) {
-            javascripts[packageName].filters.forEach(resolveSolfegeFilter);
+            javascripts[packageName].filters.forEach(resolveFilter);
         }
     }
 
@@ -441,13 +476,13 @@ proto.onBundlesInitialized = function*()
     if (!stylesheets.filters) {
         stylesheets.filters = [];
     }
-    stylesheets.filters.forEach(resolveSolfegeFilter);
+    stylesheets.filters.forEach(resolveFilter);
     for (packageName in stylesheets) {
         if (packageName === 'filters') {
             continue;
         }
         if (stylesheets[packageName].filters) {
-            stylesheets[packageName].filters.forEach(resolveSolfegeFilter);
+            stylesheets[packageName].filters.forEach(resolveFilter);
         }
     }
 };
@@ -455,8 +490,9 @@ proto.onBundlesInitialized = function*()
 /**
  * Get the public URL from a solfege URI
  *
- * @param   {String}    uri     The Solfege URI
- * @return  {String}            The public URL
+ * @param   {String}        uri     The Solfege URI
+ * @return  {String|Array}          The public URL
+ * @api     public
  */
 proto.getPublicUrlFromSolfegeUri = function(uri)
 {
@@ -465,14 +501,22 @@ proto.getPublicUrlFromSolfegeUri = function(uri)
     var relativeFilePaths = parts.relativeFilePaths;
     var publicUrls = [];
 
+    // Invalid Solfege URI
     if (relativeFilePaths instanceof Array === false) {
-        return publicUrls;
+        return '';
     }
 
+    // Build the URLs for each file
     relativeFilePaths.forEach(function(relativeFilePath) {
         publicUrls.push('/' + bundleId + '/' + relativeFilePath);
     });
 
+    // Return a string if there is only one file
+    if (publicUrls.length === 0) {
+        return '';
+    } else if (publicUrls.length === 1) {
+        return publicUrls[0];
+    }
     return publicUrls;
 };
 
@@ -481,6 +525,7 @@ proto.getPublicUrlFromSolfegeUri = function(uri)
  *
  * @param   {String}    publicPath      The public URL of a file
  * @return  {String}                    The file path
+ * @api     public
  */
 proto.getFilePathFromPublicUrl = function(publicUrl)
 {

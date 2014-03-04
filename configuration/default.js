@@ -24,7 +24,7 @@ module.exports = {
     javascripts: {
         // The default filters for each package
         filters: [
-            '@this.filters.combine'
+            'combine'
         ],
 
         // Package named "demo"
@@ -47,7 +47,7 @@ module.exports = {
     stylesheets: {
         // The default filters for each package
         filters: [
-            '@this.filters.combine'
+            'combine'
         ],
 
         // Package named "homepage"
