@@ -148,7 +148,7 @@ proto.getJavascriptContent = function*(packageName)
     }
 
     // Get the filters
-    var defaultFilters = this.configuration.stylesheets.filters;
+    var defaultFilters = this.configuration.javascripts.filters;
     var filters = packageObject.filters || defaultFilters;
 
     // Filter the contents
